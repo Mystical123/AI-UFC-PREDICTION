@@ -103,7 +103,7 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
      `data/raw/ufcstats/` (2 unmatched are genuine cross-site name-spelling
      mismatches, a documented gap, not a bug).
 2. Chunking + embeddings pipeline for RAG sources only (local, sentence-transformers)
-   — **done, currently here.** 632 chunks embedded across Sherdog/MMA Junkie/ESPN (384-dim,
+   — **done.** 632 chunks embedded across Sherdog/MMA Junkie/ESPN (384-dim,
    `data/processed/chunks.jsonl`). Verified with real semantic-search
    queries, not just "it ran" — e.g. "trash talk before the fight" correctly
    surfaced actual trash-talk quotes at 0.53 cosine similarity. Reddit chunks
@@ -127,7 +127,44 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
    a scraper-level text-extraction fix like this.
 3. Local Postgres: pgvector table for RAG embeddings + a separate plain SQL table for
    structured fighter stats. Write derived-feature logic (style classification, streak,
-   experience) on top of the stats table. — not started
+   experience) on top of the stats table. — **done, currently here.**
+   - **Local Postgres runs in Docker** (`pgvector/pgvector:pg16` image — Postgres +
+     the pgvector extension pre-bundled, no manual extension build needed). Started
+     with a plain `docker run` (not docker-compose yet — that's step 6). If `docker
+     pull`/`docker info` fails with a credential-helper error, the fix is
+     `export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"` (the
+     `docker-credential-desktop` binary exists but isn't on PATH by default on this
+     machine) — and if the daemon itself isn't running, `open -a Docker` starts it.
+   - **Schema** (`db/schema.sql`): `events`, `fighters`, `fights` (plain SQL, exact
+     data, queried directly — never embedded) + `rag_chunks` (the only table with a
+     `vector(384)` column + HNSW cosine index). `fights.fighter_{red,blue}_slug`
+     nullably FKs to `fighters.slug` — nullable because 2 of 306 fighters have no
+     UFCStats match (documented cross-site name mismatches, see RAG sources section).
+   - **Loader** (`db/load_data.py`): applies the schema, then loads `data/raw/`
+     into it — fighters with real type parsing (height "5' 10\"" → 70.0 inches,
+     percentages → floats, DOB → DATE), then events/fights (fighter names slugified
+     the same way the scrapers do, to link the FK), then `data/processed/chunks.jsonl`
+     into `rag_chunks`. Idempotent (`ON CONFLICT DO UPDATE`), safe to rerun after
+     any re-scrape.
+   - **Derived features** (`db/derive_features.py`): style classification is
+     z-scores of takedown-avg/submission-avg/strikes-landed-per-min *relative to
+     the fighter population* (not arbitrary absolute cutoffs) — whichever
+     dimension is most standard deviations above the mean wins, if it clears a
+     minimum bar, else "balanced". Verified against known real profiles: Islam
+     Makhachev → wrestler (3.22 td/15min), Justin Gaethje → striker (6.29
+     strikes/min, ~0 takedowns) — both correct. Age is straightforward from DOB.
+   - **Win streak needed a scraper change.** The original UFCStats scraper only
+     captured each fighter's *aggregate* record ("28-1-0"), which has no ordering
+     info — can't derive a streak from a total. Extended `scrape_fighter_stats.py`
+     with `_scrape_fight_history()` (the fight-by-fight table on the same fighter
+     page, most-recent-first: result/opponent/event/date/method/round/time), then
+     backfilled all 304 fighters by revisiting their already-known `profile_url`
+     directly (skips the search+disambiguation step entirely — ~2x faster than a
+     full re-scrape). Fight history itself isn't loaded into Postgres (no
+     query need for individual past fights yet) — `derive_features.py` reads it
+     straight from the JSON and writes just the computed `win_streak` int back.
+     Verified by hand: Makhachev's history shows 17 wins before hitting his one
+     loss — matches the computed value exactly.
 4. FastAPI backend (endpoints: fight cards, predictions combining stats + derived
    features + RAG-retrieved commentary w/ citations, RAG chatbot) — not started
 5. React frontend (Sleeper-style card UI) — not started
@@ -249,7 +286,9 @@ Keep new ingestion scripts consistent with this shape rather than inventing a ne
   `./venv/bin/pip`, not global Python.
 - **Secrets:** live in `.env` (gitignored), with a checked-in `.env.example`
   documenting required keys as blank placeholders. Current keys: `REDDIT_CLIENT_ID`,
-  `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT`; X/twikit credentials to be added the
-  same way when that scraper is built.
+  `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT`, `X_USERNAME`/`X_EMAIL`/`X_PASSWORD`,
+  and `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`/`POSTGRES_HOST`/
+  `POSTGRES_PORT` (local Docker Postgres — plain defaults are fine for local dev,
+  swap for real RDS credentials via `.env` when deploying, never commit real ones).
 - **Scraped data:** lives under `data/raw/<source>/`, gitignored (regenerable, not
   source code — same reasoning as not committing build artifacts).

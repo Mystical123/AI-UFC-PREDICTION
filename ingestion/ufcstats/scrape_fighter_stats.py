@@ -128,6 +128,37 @@ def find_fighter_url(page, name):
     return None
 
 
+def _scrape_fight_history(soup):
+    # Most-recent-first, same order UFCStats itself displays -- needed to
+    # derive win streak, since the aggregate record ("28-1-0") alone doesn't
+    # tell you the order fights happened in.
+    history = []
+    for row in soup.select("tbody.b-fight-details__table-body tr.b-fight-details__table-row"):
+        cols = row.find_all("td", recursive=False)
+        if len(cols) < 10:
+            continue  # the blank spacer row uses a different <tr> class, but be defensive
+
+        flag_el = cols[0].select_one(".b-flag__text")
+        opponent_ps = cols[1].select("p")
+        event_ps = cols[6].select("p")
+        method_el = cols[7].select_one("p")
+        round_el = cols[8].select_one("p")
+        time_el = cols[9].select_one("p")
+
+        history.append(
+            {
+                "result": flag_el.get_text(strip=True).lower() if flag_el else None,
+                "opponent": opponent_ps[1].get_text(strip=True) if len(opponent_ps) > 1 else None,
+                "event": event_ps[0].get_text(strip=True) if event_ps else None,
+                "date": event_ps[1].get_text(strip=True) if len(event_ps) > 1 else None,
+                "method": method_el.get_text(strip=True) if method_el else None,
+                "round": round_el.get_text(strip=True) if round_el else None,
+                "time": time_el.get_text(strip=True) if time_el else None,
+            }
+        )
+    return history
+
+
 def scrape_fighter(page, url):
     page.goto(url, timeout=30000)
     page.wait_for_load_state("networkidle", timeout=30000)
@@ -145,6 +176,7 @@ def scrape_fighter(page, url):
     }
     fighter.update(_box_list_fields(soup, BIO_FIELDS))
     fighter.update(_box_list_fields(soup, CAREER_STAT_FIELDS))
+    fighter["fight_history"] = _scrape_fight_history(soup)
     return fighter
 
 
