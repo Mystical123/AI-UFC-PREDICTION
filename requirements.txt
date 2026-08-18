@@ -3,6 +3,7 @@ beautifulsoup4
 playwright
 praw
 python-dotenv
+sentence-transformers
 # X/Twitter scraping is not yet functional -- see CLAUDE.md's "RAG sources
 # status" section for what was tried (twikit, twifork, twscrape, direct
 # Playwright login) and why each failed. No package listed here for it yet;

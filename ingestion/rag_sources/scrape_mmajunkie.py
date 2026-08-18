@@ -51,6 +51,24 @@ SHADOW_CLASS_WALK_JS = """
     return findByClass(document, cls, []);
 }
 """
+# The article body container (gnt_ar_b) also contains a trailing "related
+# stories" <aside> widget with unrelated headline links -- textContent on the
+# whole container pulls that in too. Real prose lives in <p> tags, so walk
+# shadow roots the same way but only collect <p> text within each match.
+SHADOW_BODY_PARAGRAPHS_JS = """
+(cls) => {
+    function findParagraphs(root, cls, results) {
+        root.querySelectorAll('.' + cls).forEach(el => {
+            el.querySelectorAll('p').forEach(p => results.push(p.textContent.trim()));
+        });
+        root.querySelectorAll('*').forEach(el => {
+            if (el.shadowRoot) findParagraphs(el.shadowRoot, cls, results);
+        });
+        return results;
+    }
+    return findParagraphs(document, cls, []);
+}
+"""
 
 # Real articles live at /<story|videos|picture-gallery>/sports/ufc/YYYY/MM/DD/...
 # -- this also filters out nav/footer links (Videos, Schedule, Careers, etc.)
@@ -118,7 +136,7 @@ def scrape_article(page, url):
 
     headline = page.evaluate(SHADOW_CLASS_WALK_JS, "gnt_ar_hl")
     byline = page.evaluate(SHADOW_CLASS_WALK_JS, "gnt_ar_by")
-    body_parts = page.evaluate(SHADOW_CLASS_WALK_JS, "gnt_ar_b")
+    body_parts = page.evaluate(SHADOW_BODY_PARAGRAPHS_JS, "gnt_ar_b")
 
     body_text = " ".join(body_parts)
     body_text = VIDEO_PLAYER_BOILERPLATE.sub("", body_text)

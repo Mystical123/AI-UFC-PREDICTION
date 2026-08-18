@@ -99,7 +99,12 @@ def scrape_article_body(url):
     body_el = soup.select_one(".content.body_content")
     if not body_el:
         return None
-    for tag in body_el.select("script, .a2a_kit"):
+    # blockquote = social embeds (Twitter/Instagram fallback HTML: handles,
+    # timestamps, pic.twitter.com links -- Sherdog isn't JS-rendered here, so
+    # we get the raw static fallback markup, not the rendered widget).
+    # table = live round-by-round scoring widgets in play-by-play articles.
+    # Neither is prose worth embedding.
+    for tag in body_el.select("script, .a2a_kit, blockquote, table"):
         tag.decompose()
     for ad_div in body_el.find_all("div", id=lambda x: x and x.startswith("adViAi")):
         ad_div.decompose()

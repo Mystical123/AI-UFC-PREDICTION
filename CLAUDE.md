@@ -102,7 +102,23 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
      `ingestion/ufcstats/scrape_fighter_stats.py`, 304/306 fighters in
      `data/raw/ufcstats/` (2 unmatched are genuine cross-site name-spelling
      mismatches, a documented gap, not a bug).
-2. Chunking + embeddings pipeline for RAG sources only (local, sentence-transformers) — not started
+2. Chunking + embeddings pipeline for RAG sources only (local, sentence-transformers)
+   — **in progress**. `processing/chunk_and_embed.py`: sentence-grouped chunking
+   (~150 words/chunk, 1-sentence overlap between consecutive chunks) + local
+   embeddings via `sentence-transformers` (`all-MiniLM-L6-v2`, 384-dim). Reads
+   every source under `data/raw/` (articles' `body_text`, Reddit
+   submissions/comments once that source is unblocked) and writes one combined
+   `data/processed/chunks.jsonl` (gitignored, regenerable like `data/raw/`).
+   Article chunks are embedded as `"{title}. {chunk_text}"` (title prefixed for
+   topical context) but stored with the clean `text` field alone for citation
+   display. **Found and fixed real data-quality bugs before embedding anything**:
+   MMA Junkie's article body extraction was pulling in a trailing "related
+   stories" `<aside>` widget (fixed: extract only `<p>` tags within the body
+   container, not its full textContent); Sherdog's was pulling in raw Twitter/
+   Instagram embed fallback HTML and live-scoring `<table>` widgets (fixed:
+   strip `blockquote`/`table` before extracting text). Both scrapers were
+   re-run after the fix — always re-scrape (don't just re-chunk old data) after
+   a scraper-level text-extraction fix like this.
 3. Local Postgres: pgvector table for RAG embeddings + a separate plain SQL table for
    structured fighter stats. Write derived-feature logic (style classification, streak,
    experience) on top of the stats table. — not started
