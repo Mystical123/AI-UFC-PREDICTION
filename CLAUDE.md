@@ -92,7 +92,7 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
 - **LLM calls:** Groq/OpenRouter (builder already has experience with these).
 
 ## Build order (do not skip ahead without reason)
-1. Local data ingestion scripts: **← currently here**
+1. Local data ingestion scripts:
    - [x] Fight cards (UFC.com) — done. `ingestion/fight_cards/scrape_fight_cards.py`,
      14 events in `data/raw/fight_cards/`.
    - [ ] RAG sources: Reddit (PRAW), X (scraping workaround), analyst sites (ESPN/Sherdog/MMA
@@ -103,7 +103,13 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
      `data/raw/ufcstats/` (2 unmatched are genuine cross-site name-spelling
      mismatches, a documented gap, not a bug).
 2. Chunking + embeddings pipeline for RAG sources only (local, sentence-transformers)
-   — **in progress**. `processing/chunk_and_embed.py`: sentence-grouped chunking
+   — **done, currently here.** 632 chunks embedded across Sherdog/MMA Junkie/ESPN (384-dim,
+   `data/processed/chunks.jsonl`). Verified with real semantic-search
+   queries, not just "it ran" — e.g. "trash talk before the fight" correctly
+   surfaced actual trash-talk quotes at 0.53 cosine similarity. Reddit chunks
+   will flow through the same pipeline automatically once that source is
+   unblocked (`collect_reddit_chunks()` already handles it, just no data yet).
+   `processing/chunk_and_embed.py`: sentence-grouped chunking
    (~150 words/chunk, 1-sentence overlap between consecutive chunks) + local
    embeddings via `sentence-transformers` (`all-MiniLM-L6-v2`, 384-dim). Reads
    every source under `data/raw/` (articles' `body_text`, Reddit
