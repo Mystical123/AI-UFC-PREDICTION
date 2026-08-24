@@ -166,7 +166,39 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
      Verified by hand: Makhachev's history shows 17 wins before hitting his one
      loss — matches the computed value exactly.
 4. FastAPI backend (endpoints: fight cards, predictions combining stats + derived
-   features + RAG-retrieved commentary w/ citations, RAG chatbot) — not started
+   features + RAG-retrieved commentary w/ citations, RAG chatbot) — **done, currently
+   here.** `backend/` — `main.py` (routes), `db.py` (psycopg connection pool),
+   `schemas.py` (Pydantic response models), `llm.py` (Groq client + prompt
+   construction), `retrieval.py` (chatbot's vector search).
+   - **LLM: Groq**, model `openai/gpt-oss-120b` — checked live via `client.models.list()`
+     rather than assumed, since Groq's hosted lineup changes. Picked Groq specifically
+     for the chatbot's latency (LPU inference hardware) over OpenRouter's wider model
+     selection, which isn't the bottleneck here.
+   - **Two different retrieval strategies, deliberately.** `/fights/{id}/prediction`
+     uses a plain SQL filter (`WHERE event_slug = ... AND fighter_red = ... AND
+     fighter_blue = ...`) — we already know exactly which chunks are about a given
+     fight since they were scraped for it, so nearest-neighbor search would be
+     pointless overhead. `/chat` uses real pgvector `<=>` similarity search, since a
+     user's free-text question is open-ended and we don't know in advance which
+     chunks are relevant. Same `rag_chunks` table, two different access patterns for
+     two different problems — don't reach for vector search when a metadata filter
+     answers the question directly.
+   - **Verified against real behavior, not just 200 OK responses.** Tested the
+     prediction endpoint on UFC 330 (already happened by the time this was built)
+     and immediately noticed the retrieved commentary was post-fight recap
+     articles — the model was accurately retelling the actual result, not
+     predicting anything. Not a bug, but not a fair test of real predictive
+     behavior either — re-tested on a genuinely future card (UFC 331) and got an
+     actual grounded pre-fight pick with real preview-article citations. Chatbot
+     tested with an open-ended query ("who has been talking trash lately") with no
+     exact keyword match in the source text, correctly surfaced real trash-talk
+     coverage — confirms semantic search is doing real work, not just exact-match
+     under the hood.
+   - **Local dev loop:** `docker start ufc-postgres` (the container from step 3
+     doesn't survive a machine restart/Docker Desktop closing — needs a manual
+     restart each new session; `open -a Docker` first if the daemon itself isn't
+     running) then `uvicorn backend.main:app --port 8000`. Interactive API docs at
+     `/docs` (FastAPI's auto-generated Swagger UI).
 5. React frontend (Sleeper-style card UI) — not started
 6. Dockerize backend + ingestion jobs — not started
 7. Deploy to AWS: RDS (pgvector + stats tables), ECR + ECS/Fargate, EventBridge schedule — not started
