@@ -1,11 +1,12 @@
-"""FastAPI backend: fight cards + fighter/fight detail endpoints.
+"""FastAPI backend: fight cards, fighter/fight detail, predictions, and chat.
 
-Predictions (stats + derived features + RAG-retrieved commentary -> LLM) and
-the RAG chatbot are separate, later endpoints -- both need an LLM API key
-that isn't wired up yet. Everything here is a direct Postgres query, no LLM
-involved.
+Structured endpoints (events, fighters, fights) query Postgres directly.
+Predictions combine stats/derived features with RAG commentary (exact
+metadata filter) fed to Groq. The chatbot uses real pgvector similarity
+search instead, since a user's question is open-ended.
 """
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from psycopg import Connection
 from psycopg.rows import dict_row
 
@@ -24,6 +25,16 @@ from backend.schemas import (
 )
 
 app = FastAPI(title="AI UFC Prediction API")
+
+# The Vite dev server proxies /api -> here, so the browser never actually
+# makes a cross-origin request in local dev -- this matters once the
+# frontend is deployed somewhere that calls the API directly.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 FIGHTER_COLUMNS = """
     slug, name, record, height_inches, weight_lbs, reach_inches, stance,

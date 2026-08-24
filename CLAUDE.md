@@ -199,7 +199,35 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
      restart each new session; `open -a Docker` first if the daemon itself isn't
      running) then `uvicorn backend.main:app --port 8000`. Interactive API docs at
      `/docs` (FastAPI's auto-generated Swagger UI).
-5. React frontend (Sleeper-style card UI) — not started
+5. React frontend (Sleeper-style card UI) — **done, currently here.** `frontend/`
+   — Vite + React + TypeScript + Tailwind v4. Design system built via the
+   `ui-ux-pro-max` skill: Bento Grid card layout + Dark Mode (OLED) style,
+   dark slate base (`#0F172A`/`#020617`) with UFC red/gold accents, Barlow
+   Condensed (headings) + Barlow (body) for an athletic-but-clean feel closer
+   to Sleeper's actual look than the skill's first-pass "Marketplace" +
+   monospace-font suggestion (searched more specifically by product type
+   instead of taking the first result).
+   - **Pages:** events list (upcoming/past split) → event detail (fight card,
+     grouped by main/prelims/early prelims) → fight detail (stat comparison
+     bars, on-demand AI prediction button, cited sources) → chat.
+   - **Two retrieval-aware UI decisions:** the prediction button is
+     click-to-fetch, not auto-loaded on page mount — it's a real LLM call
+     with real latency/cost, shouldn't fire just from viewing a page. Chat
+     citations are collapsed behind a `<details>` disclosure per message, not
+     always-expanded, to keep the conversation scannable.
+   - **Verified in an actual browser, not just "it compiled"** (per the
+     project's own standing rule) — used Playwright to drive the real dev
+     server and screenshot every page: events list, event detail, fight
+     detail with a live-triggered prediction (real Groq call, real citations
+     rendered), chat with a live-triggered semantic query, and a 390px mobile
+     viewport. All confirmed rendering correctly before calling this done.
+   - **Dev proxy, not CORS-in-dev:** `vite.config.ts` proxies `/api/*` to
+     `localhost:8000`, so the browser never makes a cross-origin request
+     locally. CORS middleware is still added on the FastAPI side (`backend/
+     main.py`) for whenever frontend and backend aren't on the same origin
+     (deployed).
+   - **Local dev loop:** `docker start ufc-postgres` → `uvicorn backend.main:app
+     --port 8000` → `cd frontend && npm run dev` → `localhost:5173`.
 6. Dockerize backend + ingestion jobs — not started
 7. Deploy to AWS: RDS (pgvector + stats tables), ECR + ECS/Fargate, EventBridge schedule — not started
 8. Frontend hosting (S3/CloudFront or Amplify) — not started

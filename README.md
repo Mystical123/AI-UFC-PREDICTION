@@ -57,10 +57,10 @@ Embeddings are only for unstructured text where semantic search is genuinely nee
 |---|---|
 | Scraping / ingestion | Python, `requests` + BeautifulSoup, Playwright (for JS-rendered / anti-bot sites), PRAW |
 | RAG | `sentence-transformers` (local embeddings), pgvector |
-| Structured data | PostgreSQL |
-| Backend *(planned)* | FastAPI |
-| Frontend *(planned)* | React |
-| LLM | Groq / OpenRouter |
+| Structured data + vectors | PostgreSQL + pgvector (Docker locally) |
+| Backend | FastAPI, psycopg |
+| Frontend | React, TypeScript, Vite, Tailwind CSS v4 |
+| LLM | Groq (`openai/gpt-oss-120b`) |
 | Infra *(planned)* | Docker, AWS ECS/Fargate, RDS, EventBridge, S3/CloudFront |
 
 ## Notable engineering problems solved
@@ -88,17 +88,26 @@ messy production scraping actually is:
   that were silently pulling ad-widget and social-embed HTML into what was supposed to be
   clean article text — caught by manually verifying scraped output against the real page,
   not just checking the script exited 0.
+- **Two retrieval strategies, deliberately not one.** Predictions use an exact SQL metadata
+  filter (we already know which chunks are about a given fight, since they were scraped for
+  it — nearest-neighbor search would be pointless overhead). The chatbot uses real pgvector
+  cosine similarity search, since a user's free-text question is open-ended. Same table,
+  two different access patterns for two different problems.
+- **UI verified in a real browser, not just "it builds."** Every frontend page was driven
+  with Playwright against the live dev server and screenshotted — including triggering a
+  real AI prediction and a real chatbot query end-to-end — before being called done.
 
 ## Current status
 
 - [x] Fight card scraper (UFC.com) — 14 events
-- [x] Structured stats scraper (UFCStats.com) — 300+ fighters, full career/striking/grappling metrics
+- [x] Structured stats scraper (UFCStats.com) — 300+ fighters, full career/striking/grappling
+      metrics + fight-by-fight history
 - [x] RAG source scrapers — Sherdog, MMA Junkie, and ESPN analyst articles, keyed per fight
 - [x] Chunking + local embedding pipeline (`sentence-transformers`)
+- [x] Postgres + pgvector storage, with derived features (style classification, win streak, age)
+- [x] FastAPI backend — fight cards, cited AI predictions (Groq), RAG chatbot
+- [x] React frontend — Sleeper-style card UI, verified end-to-end in a real browser
 - [ ] Reddit + X/Twitter RAG sources (blocked on external account/API issues, not code — see `CLAUDE.md`)
-- [ ] pgvector + Postgres storage layer
-- [ ] FastAPI backend
-- [ ] React frontend
 - [ ] Docker + AWS deployment (ECS/Fargate, RDS, EventBridge)
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full architecture rationale, build order, and
@@ -121,6 +130,17 @@ python ingestion/rag_sources/scrape_espn.py
 
 # chunk + embed the RAG sources
 python processing/chunk_and_embed.py
+
+# start local Postgres+pgvector (Docker), load data, compute derived features
+docker start ufc-postgres  # or: docker run ... pgvector/pgvector:pg16 (see CLAUDE.md)
+python db/load_data.py
+python db/derive_features.py
+
+# run the backend
+uvicorn backend.main:app --port 8000
+
+# in a second terminal: run the frontend
+cd frontend && npm install && npm run dev
 ```
 
-Reddit and X scrapers require API credentials in a local `.env` (see `.env.example`).
+Reddit, X, and Groq require credentials in a local `.env` (see `.env.example`).
