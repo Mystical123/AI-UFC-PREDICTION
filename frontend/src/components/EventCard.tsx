@@ -7,18 +7,18 @@ export default function EventCard({ event }: { event: EventSummary }) {
   return (
     <Link
       to={`/events/${event.event_slug}`}
-      className="group block cursor-pointer rounded-2xl border border-border bg-surface p-5 transition-colors duration-200 hover:border-brand hover:bg-surface-hover"
+      className="group block cursor-pointer rounded-xl border border-border bg-surface/60 p-4 transition-colors duration-150 hover:border-brand/60 hover:bg-surface-hover"
     >
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-1.5 flex items-center justify-between">
         <Badge variant={isUpcoming(event.date_timestamp) ? 'brand' : 'muted'}>
           {isUpcoming(event.date_timestamp) ? 'Upcoming' : 'Past'}
         </Badge>
-        <span className="text-sm text-text-muted">{formatEventDate(event.date_timestamp)}</span>
+        <span className="text-xs text-text-muted">{formatEventDate(event.date_timestamp)}</span>
       </div>
-      <h3 className="font-display text-2xl font-semibold tracking-wide text-text group-hover:text-brand-hover">
+      <h3 className="font-display text-xl font-semibold tracking-wide text-text group-hover:text-brand-hover">
         {event.event_name}
       </h3>
-      {event.venue && <p className="mt-1 text-sm text-text-muted">{event.venue}</p>}
+      {event.venue && <p className="mt-0.5 truncate text-xs text-text-muted">{event.venue}</p>}
     </Link>
   )
 }

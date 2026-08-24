@@ -38,7 +38,7 @@ export default function FightDetailPage() {
   }
 
   if (error) return <ErrorState message={error} />
-  if (!fight) return <div className="h-96 animate-pulse rounded-2xl border border-border bg-surface" />
+  if (!fight) return <div className="h-96 animate-pulse rounded-xl border border-border bg-surface" />
 
   const red = fight.fighter_red
   const blue = fight.fighter_blue
@@ -56,7 +56,7 @@ export default function FightDetailPage() {
       </div>
 
       {/* Fighter matchup */}
-      <div className="rounded-2xl border border-border bg-surface p-6">
+      <div className="rounded-xl border border-border bg-surface p-6">
         <div className="grid grid-cols-1 items-center gap-6 sm:grid-cols-[1fr_auto_1fr]">
           <FighterHeader fighter={red} side="red" />
           <p className="font-display text-2xl font-bold text-text-muted">VS</p>
@@ -86,7 +86,7 @@ export default function FightDetailPage() {
       </div>
 
       {/* AI Prediction */}
-      <div className="rounded-2xl border border-border bg-surface p-6">
+      <div className="rounded-xl border border-border bg-surface p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-2xl font-bold tracking-wide text-text">AI Prediction</h2>
           {!prediction && (

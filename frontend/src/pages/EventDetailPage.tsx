@@ -20,7 +20,7 @@ export default function EventDetailPage() {
   }, [slug])
 
   if (error) return <ErrorState message={error} />
-  if (!event) return <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />
+  if (!event) return <div className="h-40 animate-pulse rounded-xl border border-border bg-surface" />
 
   const bySegment = SEGMENT_ORDER.map((segment) => ({
     segment,
@@ -39,10 +39,10 @@ export default function EventDetailPage() {
 
       {bySegment.map(({ segment, fights }) => (
         <div key={segment}>
-          <h2 className="mb-3 font-display text-xl font-semibold uppercase tracking-wider text-text-muted">
+          <h2 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
             {segment.replace('_', ' ')}
           </h2>
-          <div className="space-y-3">
+          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface/60">
             {fights.map((fight) => (
               <FightCard key={fight.id} fight={fight} />
             ))}

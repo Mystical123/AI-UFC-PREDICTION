@@ -42,7 +42,7 @@ export default function ChatPage() {
     <div className="flex h-[calc(100vh-6.5rem)] flex-col">
       <h1 className="mb-4 font-display text-3xl font-bold tracking-wide text-text">Ask the AI</h1>
 
-      <div className="flex-1 space-y-4 overflow-y-auto rounded-2xl border border-border bg-surface p-4 sm:p-6">
+      <div className="flex-1 space-y-4 overflow-y-auto rounded-xl border border-border bg-surface p-4 sm:p-6">
         {messages.length === 0 && (
           <p className="text-sm text-text-muted">
             Ask about anything fans or analysts are saying — e.g. "who's been talking trash lately?" or "what's the
@@ -54,8 +54,8 @@ export default function ChatPage() {
             <div
               className={
                 m.role === 'user'
-                  ? 'rounded-2xl rounded-tr-sm bg-brand px-4 py-2 text-white'
-                  : 'rounded-2xl rounded-tl-sm border border-border bg-bg px-4 py-3'
+                  ? 'rounded-xl rounded-tr-sm bg-brand px-4 py-2 text-white'
+                  : 'rounded-xl rounded-tl-sm border border-border bg-bg px-4 py-3'
               }
             >
               {m.role === 'assistant' ? (
@@ -79,7 +79,7 @@ export default function ChatPage() {
           </div>
         ))}
         {loading && (
-          <div className="max-w-[90%] rounded-2xl rounded-tl-sm border border-border bg-bg px-4 py-3">
+          <div className="max-w-[90%] rounded-xl rounded-tl-sm border border-border bg-bg px-4 py-3">
             <div className="flex gap-1">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-muted [animation-delay:-0.3s]" />
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-muted [animation-delay:-0.15s]" />

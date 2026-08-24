@@ -22,8 +22,8 @@ export default function StatCompareRow({
         <span className="font-medium text-text">{blueValue != null ? format(blueValue) : '—'}</span>
       </div>
       <div className="flex h-1.5 overflow-hidden rounded-full bg-border">
-        <div className="bg-brand transition-all duration-300" style={{ width: `${redPct}%` }} />
-        <div className="bg-gold transition-all duration-300" style={{ width: `${100 - redPct}%` }} />
+        <div className="bg-win transition-all duration-300" style={{ width: `${redPct}%` }} />
+        <div className="bg-brand transition-all duration-300" style={{ width: `${100 - redPct}%` }} />
       </div>
     </div>
   )

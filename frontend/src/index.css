@@ -6,13 +6,16 @@
   --font-display: "Barlow Condensed", sans-serif;
   --font-sans: "Barlow", sans-serif;
 
-  --color-bg: #0f172a;
-  --color-bg-deep: #020617;
-  --color-surface: #1e293b;
-  --color-surface-hover: #273449;
-  --color-border: #334155;
+  /* Near-black base (closer to Sleeper's actual dark theme than a slate-800
+     "card app" dark mode) -- surfaces are subtle tints of it, not distinct
+     boxes, so lists read as dense rows rather than spaced-out cards. */
+  --color-bg: #060810;
+  --color-bg-deep: #020204;
+  --color-surface: #10131d;
+  --color-surface-hover: #171b28;
+  --color-border: #21273a;
   --color-text: #f8fafc;
-  --color-text-muted: #94a3b8;
+  --color-text-muted: #8b93a7;
 
   --color-brand: #dc2626;
   --color-brand-hover: #ef4444;

@@ -51,7 +51,7 @@ function LoadingGrid() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-32 animate-pulse rounded-2xl border border-border bg-surface" />
+        <div key={i} className="h-32 animate-pulse rounded-xl border border-border bg-surface" />
       ))}
     </div>
   )
@@ -59,7 +59,7 @@ function LoadingGrid() {
 
 export function ErrorState({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-brand/30 bg-brand/10 p-6 text-center">
+    <div className="rounded-xl border border-brand/30 bg-brand/10 p-6 text-center">
       <p className="font-medium text-text">Couldn't load data</p>
       <p className="mt-1 text-sm text-text-muted">{message}</p>
     </div>

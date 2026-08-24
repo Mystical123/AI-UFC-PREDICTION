@@ -20,7 +20,7 @@ export default function FighterHeader({ fighter, side }: { fighter: FighterDetai
 
   return (
     <div className="text-center">
-      <p className={`font-display text-3xl font-bold tracking-wide ${side === 'red' ? 'text-brand-hover' : 'text-gold'}`}>
+      <p className={`font-display text-3xl font-bold tracking-wide ${side === 'red' ? 'text-win' : 'text-brand-hover'}`}>
         {fighter.name}
       </p>
       <p className="mt-1 text-sm text-text-muted">{fighter.record ?? 'Record unknown'}</p>
