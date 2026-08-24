@@ -167,6 +167,9 @@ def load_events_and_fights(conn, valid_fighter_slugs):
             for fight in event["fights"]:
                 red_slug = slugify(fight["fighter_red"])
                 blue_slug = slugify(fight["fighter_blue"])
+                red_slug = red_slug if red_slug in valid_fighter_slugs else None
+                blue_slug = blue_slug if blue_slug in valid_fighter_slugs else None
+
                 cur.execute(
                     """
                     INSERT INTO fights (
@@ -178,8 +181,8 @@ def load_events_and_fights(conn, valid_fighter_slugs):
                     """,
                     (
                         event_slug,
-                        red_slug if red_slug in valid_fighter_slugs else None,
-                        blue_slug if blue_slug in valid_fighter_slugs else None,
+                        red_slug,
+                        blue_slug,
                         fight["fighter_red"],
                         fight["fighter_blue"],
                         fight.get("weight_class"),
@@ -187,6 +190,16 @@ def load_events_and_fights(conn, valid_fighter_slugs):
                     ),
                 )
                 fights += 1
+
+                # Fighter photos come from UFC.com's own fight-card corner
+                # images (this file), not a separate scrape -- propagate onto
+                # the fighters row here rather than adding a new ingestion step.
+                for slug, image_url in (
+                    (red_slug, fight.get("fighter_red_image_url")),
+                    (blue_slug, fight.get("fighter_blue_image_url")),
+                ):
+                    if slug and image_url:
+                        cur.execute("UPDATE fighters SET image_url = %s WHERE slug = %s", (image_url, slug))
     conn.commit()
     print(f"Loaded {events} events, {fights} fights.")
 

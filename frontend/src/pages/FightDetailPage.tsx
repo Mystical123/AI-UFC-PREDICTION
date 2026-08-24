@@ -21,21 +21,21 @@ export default function FightDetailPage() {
     if (!id) return
     setFight(null)
     setPrediction(null)
-    api.getFight(Number(id)).then(setFight).catch((e) => setError(e.message))
-  }, [id])
-
-  async function loadPrediction() {
-    if (!id) return
-    setPredicting(true)
     setPredictionError(null)
-    try {
-      setPrediction(await api.getPrediction(Number(id)))
-    } catch (e) {
-      setPredictionError((e as Error).message)
-    } finally {
-      setPredicting(false)
-    }
-  }
+
+    // Fired in parallel, not sequentially -- the prediction doesn't need the
+    // fight data client-side (the backend looks it up itself), and it's
+    // cached server-side after the first request for a given fight, so this
+    // is fast on every visit after the first.
+    api.getFight(Number(id)).then(setFight).catch((e) => setError(e.message))
+
+    setPredicting(true)
+    api
+      .getPrediction(Number(id))
+      .then(setPrediction)
+      .catch((e) => setPredictionError(e.message))
+      .finally(() => setPredicting(false))
+  }, [id])
 
   if (error) return <ErrorState message={error} />
   if (!fight) return <div className="h-96 animate-pulse rounded-xl border border-border bg-surface" />
@@ -87,16 +87,10 @@ export default function FightDetailPage() {
 
       {/* AI Prediction */}
       <div className="rounded-xl border border-border bg-surface p-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center gap-2">
           <h2 className="font-display text-2xl font-bold tracking-wide text-text">AI Prediction</h2>
-          {!prediction && (
-            <button
-              onClick={loadPrediction}
-              disabled={predicting}
-              className="cursor-pointer rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {predicting ? 'Analyzing…' : 'Get Prediction'}
-            </button>
+          {predicting && (
+            <span className="h-2 w-2 animate-pulse rounded-full bg-brand" aria-hidden="true" />
           )}
         </div>
 

@@ -51,6 +51,11 @@ def _fighter_name(corner_div):
     return text or None
 
 
+def _fighter_image(fight_el, corner):
+    img = fight_el.select_one(f".c-listing-fight__corner-image--{corner} img")
+    return img["src"] if img and img.get("src") else None
+
+
 def scrape_event(url):
     resp = requests.get(url, headers=HEADERS, timeout=15)
     resp.raise_for_status()
@@ -85,6 +90,8 @@ def scrape_event(url):
                 {
                     "fighter_red": fighter_red,
                     "fighter_blue": fighter_blue,
+                    "fighter_red_image_url": _fighter_image(fight, "red"),
+                    "fighter_blue_image_url": _fighter_image(fight, "blue"),
                     "weight_class": weight_class_el.get_text(strip=True) if weight_class_el else None,
                     "card_segment": segment_label,
                 }

@@ -18,6 +18,7 @@ export interface FighterSummary {
   style: string | null
   age: number | null
   win_streak: number | null
+  image_url: string | null
 }
 
 export interface FighterDetail extends FighterSummary {
@@ -39,6 +40,8 @@ export interface FightSummary {
   event_slug: string
   fighter_red_name: string
   fighter_blue_name: string
+  fighter_red_image_url: string | null
+  fighter_blue_image_url: string | null
   weight_class: string | null
   card_segment: string | null
 }

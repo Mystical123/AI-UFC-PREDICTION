@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg import Connection
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 from backend.db import get_connection
 from backend.llm import generate_chat_response, generate_prediction
@@ -41,7 +42,7 @@ FIGHTER_COLUMNS = """
     date_of_birth, sig_strikes_landed_per_min, sig_strike_accuracy_pct,
     sig_strikes_absorbed_per_min, sig_strike_defense_pct,
     takedown_avg_per_15min, takedown_accuracy_pct, takedown_defense_pct,
-    submission_avg_per_15min, profile_url, style, age, win_streak
+    submission_avg_per_15min, profile_url, style, age, win_streak, image_url
 """
 
 
@@ -68,8 +69,15 @@ def get_event(event_slug: str, conn: Connection = Depends(get_connection)):
             raise HTTPException(status_code=404, detail="Event not found")
 
         cur.execute(
-            "SELECT id, event_slug, fighter_red_name, fighter_blue_name, weight_class, card_segment "
-            "FROM fights WHERE event_slug = %s ORDER BY id",
+            """
+            SELECT f.id, f.event_slug, f.fighter_red_name, f.fighter_blue_name,
+                   f.weight_class, f.card_segment,
+                   fr.image_url AS fighter_red_image_url, fb.image_url AS fighter_blue_image_url
+            FROM fights f
+            LEFT JOIN fighters fr ON f.fighter_red_slug = fr.slug
+            LEFT JOIN fighters fb ON f.fighter_blue_slug = fb.slug
+            WHERE f.event_slug = %s ORDER BY f.id
+            """,
             (event_slug,),
         )
         event["fights"] = cur.fetchall()
@@ -145,6 +153,17 @@ def get_fight(fight_id: int, conn: Connection = Depends(get_connection)):
 @app.get("/fights/{fight_id}/prediction", response_model=PredictionResponse)
 def get_prediction(fight_id: int, conn: Connection = Depends(get_connection)):
     with conn.cursor(row_factory=dict_row) as cur:
+        # Predictions are generated once per fight and cached -- an LLM call
+        # is nondeterministic, so regenerating on every request made the
+        # displayed pick/confidence change between visits. See db/schema.sql.
+        cur.execute(
+            "SELECT prediction_text, citations FROM predictions WHERE fight_id = %s",
+            (fight_id,),
+        )
+        cached = cur.fetchone()
+        if cached:
+            return {"fight_id": fight_id, "prediction": cached["prediction_text"], "citations": cached["citations"]}
+
         fight = _fetch_fight_detail(cur, fight_id)
         if not fight:
             raise HTTPException(status_code=404, detail="Fight not found")
@@ -159,7 +178,19 @@ def get_prediction(fight_id: int, conn: Connection = Depends(get_connection)):
         )
         chunks = cur.fetchall()
 
-    prediction_text = generate_prediction(fight, chunks)
+        prediction_text = generate_prediction(fight, chunks)
+
+        cur.execute(
+            """
+            INSERT INTO predictions (fight_id, prediction_text, citations)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (fight_id) DO UPDATE SET
+                prediction_text = EXCLUDED.prediction_text, citations = EXCLUDED.citations, created_at = now()
+            """,
+            (fight_id, prediction_text, Jsonb(chunks)),
+        )
+    conn.commit()
+
     return {
         "fight_id": fight_id,
         "prediction": prediction_text,

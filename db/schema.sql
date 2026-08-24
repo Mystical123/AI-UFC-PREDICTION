@@ -34,14 +34,18 @@ CREATE TABLE IF NOT EXISTS fighters (
     -- Derived features (computed, not scraped -- see db/derive_features.py):
     style TEXT,          -- wrestler / grappler / striker / balanced
     age INTEGER,
-    win_streak INTEGER
+    win_streak INTEGER,
+    -- Sourced from UFC.com's own fight-card corner images (data/raw/fight_cards),
+    -- not scraped separately -- see db/load_data.py.
+    image_url TEXT
 );
 
 -- ADD COLUMN IF NOT EXISTS so re-running this file against an already-created
--- table (from before these derived columns existed) is still idempotent.
+-- table (from before these columns existed) is still idempotent.
 ALTER TABLE fighters ADD COLUMN IF NOT EXISTS style TEXT;
 ALTER TABLE fighters ADD COLUMN IF NOT EXISTS age INTEGER;
 ALTER TABLE fighters ADD COLUMN IF NOT EXISTS win_streak INTEGER;
+ALTER TABLE fighters ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 CREATE TABLE IF NOT EXISTS fights (
     id SERIAL PRIMARY KEY,
@@ -74,3 +78,15 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
 -- compared by cosine similarity, not raw distance.
 CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
     ON rag_chunks USING hnsw (embedding vector_cosine_ops);
+
+-- Predictions are generated once per fight and cached here, not regenerated
+-- on every page view -- an LLM call is nondeterministic (temperature > 0),
+-- so re-generating on every request made the displayed pick/confidence
+-- change from one visit to the next, which reads as broken/untrustworthy
+-- for a "prediction" feature. One fight -> one stored prediction.
+CREATE TABLE IF NOT EXISTS predictions (
+    fight_id INTEGER PRIMARY KEY REFERENCES fights(id),
+    prediction_text TEXT NOT NULL,
+    citations JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

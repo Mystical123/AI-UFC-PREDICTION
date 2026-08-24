@@ -23,6 +23,7 @@ class FighterSummary(BaseModel):
     style: str | None
     age: int | None
     win_streak: int | None
+    image_url: str | None
 
 
 class FighterDetail(FighterSummary):
@@ -44,6 +45,8 @@ class FightSummary(BaseModel):
     event_slug: str
     fighter_red_name: str
     fighter_blue_name: str
+    fighter_red_image_url: str | None
+    fighter_blue_image_url: str | None
     weight_class: str | None
     card_segment: str | None
 

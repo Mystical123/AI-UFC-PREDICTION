@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { FightSummary } from '../api/types'
+import Avatar from './Avatar'
 import Badge from './Badge'
 
 // A dense list row (not its own bordered/rounded card) -- meant to sit inside
@@ -11,8 +12,14 @@ export default function FightCard({ fight }: { fight: FightSummary }) {
   return (
     <Link
       to={`/fights/${fight.id}`}
-      className="group flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors duration-150 hover:bg-surface-hover"
+      className="group flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-surface-hover"
     >
+      <div className="flex shrink-0 items-center">
+        <Avatar src={fight.fighter_red_image_url} name={fight.fighter_red_name} size="sm" ring="win" />
+        <div className="-ml-3">
+          <Avatar src={fight.fighter_blue_image_url} name={fight.fighter_blue_name} size="sm" ring="brand" />
+        </div>
+      </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-display text-lg font-semibold tracking-wide text-text group-hover:text-brand-hover sm:text-xl">
           {fight.fighter_red_name} <span className="text-text-muted">vs</span> {fight.fighter_blue_name}

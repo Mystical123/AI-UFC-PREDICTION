@@ -228,6 +228,36 @@ LLM orchestration via Groq/OpenRouter. Prior projects: PathReview, RepairSafe, U
      (deployed).
    - **Local dev loop:** `docker start ufc-postgres` → `uvicorn backend.main:app
      --port 8000` → `cd frontend && npm run dev` → `localhost:5173`.
+
+   **Post-launch fixes (2026-08-17), from real user feedback:**
+   - **Predictions are now cached, not regenerated per request.** The original
+     design called the LLM fresh on every page view. Since Groq's calls aren't
+     deterministic (temperature > 0), the displayed pick/confidence could
+     change between visits to the *same* fight — reads as broken/untrustworthy
+     for a "prediction" feature. Fixed with a `predictions` table
+     (`fight_id` → cached text + citations, generated once, served after
+     that). This also made auto-loading the prediction on page mount
+     (removing the old "Get Prediction" button, per feedback that clicking
+     for it felt unnecessary) actually reasonable — without caching,
+     auto-loading would've meant a fresh (and non-reproducible) LLM call on
+     every single page visit.
+   - **Prompt tuned for decisiveness.** Confidence numbers were reading as
+     wishy-washy (hovering near 50% even for lopsided stat gaps). Rewrote
+     `PREDICTION_SYSTEM_PROMPT` to explicitly commit to a side and calibrate
+     confidence to how one-sided the underlying stats actually are, plus
+     dropped temperature 0.4 → 0.2 for a less rambly single generation
+     (matters less for consistency now that it's cached, but still helps the
+     one real generation read as decisive).
+   - **Real fighter photos, sourced from data already being scraped.**
+     `ingestion/fight_cards/scrape_fight_cards.py` now also captures each
+     corner's image `src` from UFC.com's own fight-card markup
+     (`.c-listing-fight__corner-image--{red,blue} img`) — no new scraping
+     target, just pulling one more attribute from a page already being
+     visited. `db/load_data.py` propagates it onto `fighters.image_url`
+     (matched by the same `slugify()` used everywhere else). 269/304
+     fighters have a photo (fighters outside the currently-scraped cards
+     don't). Frontend `Avatar` component falls back to initials on a
+     missing/broken image (`onError`) rather than a broken-image icon.
 6. Dockerize backend + ingestion jobs — not started
 7. Deploy to AWS: RDS (pgvector + stats tables), ECR + ECS/Fargate, EventBridge schedule — not started
 8. Frontend hosting (S3/CloudFront or Amplify) — not started

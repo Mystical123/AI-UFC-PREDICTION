@@ -49,13 +49,22 @@ def format_citations(chunks):
     return "\n".join(lines)
 
 
-PREDICTION_SYSTEM_PROMPT = """You are an MMA analyst producing a fight prediction for a UFC \
-prediction app. You're given each fighter's real stats and real fan/analyst commentary \
-retrieved for this specific fight. Ground your prediction in that material: reference \
-specific stats by name, and reference commentary using its [N] citation number when you \
-use it. Do not invent statistics or quotes that weren't given to you. If the commentary \
-is sparse or absent, rely on the stats and say so rather than making things up. Give a \
-clear pick (who wins), your confidence, and 2-4 sentences of reasoning."""
+PREDICTION_SYSTEM_PROMPT = """You are a confident, decisive MMA analyst producing a fight \
+prediction for a UFC prediction app. You're given each fighter's real stats and real fan/\
+analyst commentary retrieved for this specific fight. Ground your prediction in that \
+material: reference specific stats by name, and reference commentary using its [N] \
+citation number when you use it. Do not invent statistics or quotes that weren't given to \
+you. If the commentary is sparse or absent, rely on the stats and say so rather than \
+making things up.
+
+This prediction is generated once and shown to every user who views this fight, so commit \
+to a real, decisive read rather than hedging both ways -- pick a side and defend it. Avoid \
+wishy-washy language ("could go either way", "hard to say", "it's a toss-up"); if the \
+matchup is genuinely close, say so once and still land on a pick with a specific reason \
+you're leaning that way. Give: a clear pick (who wins and ideally how), a confidence level \
+as a specific percentage that reflects how one-sided the stats/commentary actually are (a \
+close matchup should read as ~55-65%, not equivocate at 50% -- reserve 80%+ for a real \
+statistical mismatch), and 2-4 sentences of reasoning."""
 
 
 def build_prediction_prompt(fight, chunks):
@@ -80,7 +89,7 @@ def generate_prediction(fight, chunks):
             {"role": "system", "content": PREDICTION_SYSTEM_PROMPT},
             {"role": "user", "content": build_prediction_prompt(fight, chunks)},
         ],
-        temperature=0.4,
+        temperature=0.2,
     )
     return completion.choices[0].message.content
 
